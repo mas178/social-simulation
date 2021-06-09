@@ -39,9 +39,17 @@ end
 
 to setup-grasses
   print("### setup-grasses ###")
+
+  ; ワールドを正方形とした場合の、一辺当りの草の数
   set grass-count ceiling sqrt minimal-number-of-grass
+
+  ; ワールドを正方形とした場合の、一辺当りの草場の数
   set group-count ceiling (grass-count / patch-width)
+
+  ; 草場の幅とギャップの幅の和
   set patch-gap-width patch-width + gap-width
+
+  ; minimal-number-of-grass以上の草を、patch-widthとgap-widthを満たしつつ格納するために必要なワールドの幅
   set world-size group-count * patch-gap-width
 
   print(word "grass-count=" grass-count ", group-count=" group-count ", world-size=" world-size)
@@ -89,7 +97,7 @@ end
 
 to go
   ask turtles [
-    if mode = "Alarm calling" [
+    if (is-number? position "Alarm calling" mode) [
       attacked
     ]
 
@@ -142,7 +150,7 @@ to move
 end
 
 to eat
-  ifelse (mode = "Feeding restraint") and (breed = cooperative-cows) [
+  ifelse (is-number? position "Feeding restraint" mode) and (breed = cooperative-cows) [
     set energy energy + grass * 0.5
     set grass grass * 0.5
   ] [
@@ -166,7 +174,15 @@ to reproduce
       set energy init-energy
 
       ; 子の位置を設定する
-      let empty-patches (filter [p -> not any? turtles-on p] (sort neighbors))
+      let empty-patches []
+      ifelse (is-number? position "(remote birth)" mode) [
+        ; (remote birth) の場合は、ランダムな空きパッチに子供を産む
+        set empty-patches (filter [p -> not any? turtles-on p] (sort patches))
+      ] [
+        ; (remote birth) ではない場合は、親の近くの空きパッチに子供を産む
+        set empty-patches (filter [p -> not any? turtles-on p] (sort neighbors))
+      ]
+
       ifelse empty? empty-patches [
         die
       ][
@@ -204,7 +220,7 @@ end
 ; Grass
 ;--------------
 to grow-grass
-  ifelse mode = "Feeding restraint" [
+  ifelse (is-number? position "Feeding restraint" mode) [
     set grass (grass + 0.2 * grass * (max-grass-height - grass) / max-grass-height)
   ] [
     set grass min list (grass + 1) max-grass-height
@@ -218,8 +234,8 @@ end
 GRAPHICS-WINDOW
 370
 33
-918
-582
+1188
+852
 -1
 -1
 15.0
@@ -233,9 +249,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-35
+53
 0
-35
+53
 1
 1
 1
@@ -431,7 +447,7 @@ gap-width
 gap-width
 0
 10
-2.0
+5.0
 1
 1
 NIL
@@ -450,12 +466,12 @@ Grass:
 CHOOSER
 14
 100
-168
+257
 145
 mode
 mode
-"-" "Feeding restraint" "Alarm calling"
-2
+"-" "Feeding restraint" "Alarm calling" "Feeding restraint (remote birth)" "Alarm calling (remote birth)"
+1
 
 TEXTBOX
 19
