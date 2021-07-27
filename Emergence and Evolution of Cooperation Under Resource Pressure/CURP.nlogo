@@ -44,16 +44,6 @@ globals [
   generation                     ;; current generation
   n-rounds
   ;rounds-per-generation         ;; number of rounds per generation
-  ; avgFitness                     ;; average fitness after the last generation
-  ; sdFitness
-  ; avgGivenEnergy
-  ; sdGivenEnergy
-  ; history-size                   ;; number of generations for the stop condition
-  ; distribution-given-energy
-  ; history-distribution
-
-  ;; Interactive/batch runs
-  interactive-run?               ;; update World window ?
 ]
 
 people-own [
@@ -74,22 +64,11 @@ people-own [
 to startup [interactive?]
   clear-all
   set-default-shape people "person"
-  set interactive-run? interactive?
   reset-ticks
-  load-experiment
   create-agents
   set n-rounds 0
   set generation 0
   set energy 1
-  ; set avgFitness 0
-  ; set sdFitness 0
-  ; set avgGivenEnergy 0
-  ; set sdGivenEnergy 0
-  ; set history-size 100
-  ; set distribution-given-energy map [i -> count people with [given-energy <= i] / n-people] n-values 11 [ i -> i / 10]
-  ; set history-distribution []
-  ; set history-distribution fput distribution-given-energy history-distribution
-
 end
 
 to create-agents
@@ -232,57 +211,8 @@ to-report count-items [i the-list]
   report length filter [ ?1 -> ?1 = i ] the-list
 end
 
-
-; to compute-statistics
-  ; set avgFitness mean [fitness] of people
-  ; set sdFitness standard-deviation [fitness] of people
-  ; set avgGivenEnergy mean [given-energy] of people
-  ; set sdGivenEnergy standard-deviation [given-energy] of people
-  ; set distribution-given-energy map [x -> count people with [given-energy <= x] / n-people] n-values 11 [y ->  y / 10]
-  ; set history-distribution fput distribution-given-energy history-distribution
-  ; if length history-distribution > history-size [ set history-distribution but-last history-distribution ] ;; 100 last generation values
-; end
-
 to-report stop-cond
   report ticks > 5000
-end
-
-; called from behavior space
-;to-report variation
-;  let last100_pe_stdv []
-;  foreach n-values 11 [?]
-;  [  let i ?
-;    set last100_pe_stdv fput ( standard-deviation map [item i (item ? history-distribution)] n-values history-size [?] ) last100_pe_stdv
-;  ]
-;  report last100_pe_stdv
-;end
-; to-report variation
-;   let last100_pe_stdv []
-;   foreach n-values 11 [i -> i]
-;   [
-;     x -> set last100_pe_stdv fput ( standard-deviation map [y -> item x (item y history-distribution)] n-values history-size [i -> i] ) last100_pe_stdv
-;   ]
-;   report last100_pe_stdv
-; end
-
-to load-experiment
-  ;let FilePath "C:/Users/user/Dropbox/UBU/SimulPast/Paper-densidad recursos poblacion/modelo/NewModel/LHS experiments/input_files/"
-  ;let filename word FilePath word "experiment" word exp-number ".csv"
-  let filename (word "./input_files/experiment" exp-number ".csv")
-  file-open filename
-  while [not file-at-end?]
-  [
-    let name file-read-line
-    set n-people file-read
-    set prob-resource file-read
-    set min-energy file-read
-    set sharing-tournament-size file-read
-    set strategy-tournament-size file-read
-    set prob-mutation file-read
-    set rounds-per-generation file-read
-    let dontwantit file-read-line
-  ]
-  file-close
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -536,17 +466,6 @@ generation
 0
 1
 11
-
-INPUTBOX
-760
-177
-833
-237
-exp-number
-9.0
-1
-0
-Number
 
 @#$#@#$#@
 ## WHAT IS IT?
