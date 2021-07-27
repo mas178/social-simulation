@@ -1,6 +1,6 @@
 # The evolution of cooperation in an ecological context: An agent-based model
 
-- This is the replication of the paper "[Pepper, J. W., & Smuts, B. B. (2000). The evolution of cooperation in an ecological context: an agent-based model. Dynamics in Human and Primate Societies: Agent-Based Modeling of Social and Spatial Processes, 45-76.](https://www.researchgate.net/publication/247870731_The_evolution_of_cooperation_in_an_ecological_context_An_agent-based_model)".
+- This is the reproduction of the paper "[Pepper, J. W., & Smuts, B. B. (2000). The evolution of cooperation in an ecological context: an agent-based model. Dynamics in Human and Primate Societies: Agent-Based Modeling of Social and Spatial Processes, 45-76.](https://www.researchgate.net/publication/247870731_The_evolution_of_cooperation_in_an_ecological_context_An_agent-based_model)".
 - Although I cannot guarantee the accuracy of the details, I was able to confirm the results of all the experiments in the paper.
 - The development and execution environment is [Netlogo 6.2](http://ccl.northwestern.edu/netlogo/).
 - Source code is [Cooperation_multi_level_selection.nlogo](https://github.com/mas178/reproduction-of-papers/blob/main/The%20evolution%20of%20cooperation%20in%20an%20ecological%20context%20(An%20agent-based%20model)/Cooperation_multi_level_selection.nlogo).
