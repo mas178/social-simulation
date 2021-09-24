@@ -1,0 +1,14 @@
+scale_free,fixed_cost,0.5,0.0
+scale_free,fixed_cost,0.55,0.0
+scale_free,fixed_cost,0.6,0.1111580408163265
+scale_free,fixed_cost,0.65,0.2041815918367347
+scale_free,fixed_cost,0.7,0.416301612244898
+scale_free,fixed_cost,0.75,0.6465089081632653
+scale_free,fixed_cost,0.8,0.7400978367346941
+scale_free,variable_cost,0.5,0.0
+scale_free,variable_cost,0.55,0.014598234693877553
+scale_free,variable_cost,0.6,0.11253585714285713
+scale_free,variable_cost,0.65,0.1295278775510204
+scale_free,variable_cost,0.7,0.4258331224489796
+scale_free,variable_cost,0.75,0.7263388571428573
+scale_free,variable_cost,0.8,0.7669126734693877
