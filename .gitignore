@@ -4,3 +4,5 @@
 **/*.iml
 **/*.csv
 **/*.zip
+**/nohup.out
+Inaba2021/*
