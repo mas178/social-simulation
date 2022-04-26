@@ -27,7 +27,7 @@ end
 @testset "Model" begin
     @testset "simple test" begin
         graph = cycle_graph(5)
-        model = sim.Model(graph, hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0)
+        model = sim.Model(graph, hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
 
         @test model.graph == graph
         @test model.hop_game == 2
@@ -42,7 +42,7 @@ end
 
     @testset "neighbours' test for simple network" begin
         graph = cycle_graph(9)
-        model = sim.Model(graph, hop_game = 2, hop_learning = 3, n_game = 4, n_learning = 4, b = 6.0)
+        model = sim.Model(graph, hop_game = 2, hop_learning = 3, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
         @test sort(model.neighbours_game[1]) == [2, 3, 8, 9]
         @test sort(model.neighbours_game[5]) == [3, 4, 6, 7]
         @test sort(model.neighbours_game[9]) == [1, 2, 7, 8]
@@ -51,14 +51,14 @@ end
         @test sort(model.neighbours_learning[9]) == [1, 2, 3, 6, 7, 8]
 
         # ホップ数がネットワークの規模を超える場合、自分以外の全てのノードが隣人として選択される
-        model = sim.Model(graph, hop_game = 20, hop_learning = 20, n_game = 4, n_learning = 4, b = 6.0)
+        model = sim.Model(graph, hop_game = 20, hop_learning = 20, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
         @test sort(model.neighbours_game[1]) == [2, 3, 4, 5, 6, 7, 8, 9]
         @test sort(model.neighbours_learning[1]) == [2, 3, 4, 5, 6, 7, 8, 9]
     end
 
     @testset "neighbours' test for complex network" begin
         graph = barabasi_albert(100, 2)
-        model = sim.Model(graph, hop_game = 1, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0)
+        model = sim.Model(graph, hop_game = 1, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
         @test sort(model.neighbours_game[1]) == sort(filter(n_id -> n_id != 1, neighborhood(graph, 1, 1)))
         @test sort(model.neighbours_game[50]) == sort(filter(n_id -> n_id != 50, neighborhood(graph, 50, 1)))
         @test sort(model.neighbours_game[100]) == sort(filter(n_id -> n_id != 100, neighborhood(graph, 100, 1)))
@@ -68,14 +68,14 @@ end
         @test sort(model.neighbours_learning[100]) == sort(filter(n_id -> n_id != 100, neighborhood(graph, 100, 2)))
 
         # ホップ数がネットワークの規模を超える場合、自分以外の全てのノードが隣人として選択される
-        model = sim.Model(graph, hop_game = 6, hop_learning = 6, n_game = 4, n_learning = 4, b = 6.0)
+        model = sim.Model(graph, hop_game = 6, hop_learning = 6, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
         @test sort(model.neighbours_game[25]) == filter(x -> x != 25, 1:100)
         @test sort(model.neighbours_learning[75]) == filter(x -> x != 75, 1:100)
     end
 end
 
 @testset "select_neighbours" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 2, n_learning = 10, b = 6.0)
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 2, n_learning = 10, b = 6.0, μ = 0.0, δ = 1.0)
 
     neighbours = sim.select_neighbours(model, model.agents[1], :game)
     @test length(neighbours) == 3
@@ -89,7 +89,7 @@ end
 end
 
 @testset "calc_payoffs!" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 5.0)
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
 
     # 事前状態
     for agent in model.agents
@@ -104,8 +104,24 @@ end
     @test [agent.payoff for agent in model.agents] == [10.0, 15.0, 10.0, 15.0, 10.0]
 end
 
+@testset "role_model and payoff_to_fitness" begin
+    model = sim.Model(cycle_graph(5), hop_game=2, hop_learning=2, n_game=2, n_learning=10, b=6.0, μ=0.0, δ = 0.1)
+    [agent.payoff = i for (i, agent) in enumerate(model.agents)]
+
+    counters = [0, 0, 0, 0, 0]
+    trial = 10^4
+    fitness_vec = [sim.payoff_to_fitness(a.payoff, 0.1) for a in model.agents]
+    @test fitness_vec == [1.0, 1.1, 1.2, 1.3, 1.4]
+
+    for _ in 1:trial
+        counters[sim.role_model(model, model.agents[1]).id] += 1
+    end
+
+    @test counters / trial ≈ fitness_vec / sum(fitness_vec) atol = 0.1
+end
+
 @testset "set_next_strategies!" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 5.0)
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 5.0, μ = 0.0, δ = 0.1)
 
     @testset "If the collaborators have a high payoff, the next generation will all be collaborators." begin
         # 事前状態
@@ -136,10 +152,25 @@ end
         # 事後状態
         @test [agent.next_is_cooperator for agent in model.agents] == [false, false, false, false, false]
     end
+
+    @testset "Weak Selection" begin
+        counters = [0, 0, 0, 0, 0]
+        trial = 10^4
+
+        for _ in 1:trial
+            model = sim.Model(cycle_graph(5), hop_game=2, hop_learning=2, n_game=2, n_learning=10, b=6.0, μ=0.0, δ = 0.1)
+            [agent.payoff = i for (i, agent) in enumerate(model.agents)]
+            [agent.is_cooperator = (i ∈ [1, 2]) for (i, agent) in enumerate(model.agents)]
+
+            sim.set_next_strategies!(model, weak_selection=true)
+            counters += [a.next_is_cooperator for a in model.agents]
+        end
+        @test counters / trial ≈ [0.35, 0.35, 0.35, 0.35, 0.35] atol = 0.025
+    end
 end
 
 @testset "update_agents!" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0)
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 4, b = 6.0, μ = 0.0, δ = 1.0)
 
     # 事前状態
     for agent in model.agents
@@ -160,7 +191,7 @@ end
 @testset "make_graph" begin
     @testset "scale_free" begin
         N = 1000
-        g = sim.make_graph(:scale_free, N)
+        g = sim.make_graph(:scale_free_4, N)
 
         # 頂点数
         @test nv(g) == N
@@ -173,11 +204,11 @@ end
 
         # 平均距離 (L)
         L = mean([sum(gdistances(g, v)) / (N - 1) for v in vertices(g)])
-        @test abs(L - 4.074) < 0.1
+        @test L ≈ 4.074 atol = 0.1
 
         # クラスター係数 (C)
         C = global_clustering_coefficient(g)
-        @test abs(C - 0.01) < 0.0025
+        @test C ≈ 0.01 atol = 0.005
     end
 
     @testset "regular_4" begin
@@ -202,7 +233,7 @@ end
             L = mean([sum(gdistances(g, v)) / (N - 1) for v in vertices(g)])
             push!(Ls, L)
         end
-        @test abs(mean(Ls) - 5.636) < 0.1
+        @test mean(Ls) ≈ 5.636 atol = 0.01
     end
 end
 
@@ -210,7 +241,7 @@ end
     @testset "b = 3, oneshot" begin
         cooperator_rates = []
         for trial in 1:1000
-            model = sim.Model(barabasi_albert(100, 2), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 3.0)
+            model = sim.Model(barabasi_albert(100, 2), hop_game = 2, hop_learning = 2, n_game = 4, n_learning = 2, b = 3.0, μ = 0.0, δ = 1.0)
             sim.calc_payoffs!(model)
             sim.set_next_strategies!(model)
             sim.update_agents!(model)
@@ -222,7 +253,7 @@ end
     @testset "b = 4, hop = 1, 10-loop" begin
         cooperator_rates = []
         for trial in 1:100
-            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, n_game = 4, n_learning = 4, b = 4.0)
+            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, n_game = 4, n_learning = 4, b = 4.0, μ = 0.0, δ = 1.0)
             for step in 1:10
                 sim.calc_payoffs!(model)
                 sim.set_next_strategies!(model)
@@ -236,7 +267,7 @@ end
     @testset "b = 2, hop = 1, 10-loop" begin
         cooperator_rates = []
         for trial in 1:100
-            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, n_game = 4, n_learning = 4, b = 2.0)
+            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, n_game = 4, n_learning = 4, b = 2.0, μ = 0.0, δ = 1.0)
             for step in 1:10
                 sim.calc_payoffs!(model)
                 sim.set_next_strategies!(model)

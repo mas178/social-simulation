@@ -4,6 +4,7 @@ module Simulation
 using Dates: format, now
 using LightGraphs
 using Random: rand, shuffle
+using StatsBase: sample, Weights
 using Statistics: mean, std
 
 mutable struct Agent
@@ -28,6 +29,7 @@ struct Model
     c::Float64  # game contribution
 
     μ::Float64  # mutation rate
+    δ::Float64  # selectin parameter
 
     agents::Vector{Agent}
     neighbours_game::Vector{Vector{Int64}}  # neighbors for game. That includes myself.
@@ -40,7 +42,8 @@ struct Model
         n_game::Int,
         n_learning::Int,
         b::Float64,
-        μ::Float64
+        μ::Float64,
+        δ::Float64
     ) = new(
         graph,
         hop_game,
@@ -50,6 +53,7 @@ struct Model
         b,  # benefit multiplying factor
         1.0,  # c: game contribution
         μ,  # mutation rate
+        δ,  # selection parameter
         [Agent(id) for id in vertices(graph)],
         [filter(n_id -> n_id != id, neighborhood(graph, id, hop_game)) for id in vertices(graph)],
         [filter(n_id -> n_id != id, neighborhood(graph, id, hop_learning)) for id in vertices(graph)]
@@ -85,11 +89,32 @@ function calc_payoffs!(model::Model)
     end
 end
 
-function set_next_strategies!(model::Model)
-    Threads.@threads for agent in model.agents
-        neighbours = select_neighbours(model, agent, :learning)
-        best_payoff_agent = sort(neighbours, by = _agent -> _agent.payoff, rev = true)[1]
-        agent.next_is_cooperator = best_payoff_agent.is_cooperator
+payoff_to_fitness(payoff::Float64, δ::Float64) = round(1 - δ + δ * payoff, digits=3)
+
+function role_model(model::Model, agent::Agent)::Agent
+    # neighbour and focal agent
+    neighbour_ids = model.neighbours_game[agent.id]
+    neighbours = [model.agents[id] for id in neighbour_ids]
+    push!(neighbours, agent)
+
+    # pick a role model based on the weights
+    weights = [payoff_to_fitness(a.payoff, model.δ) for a in neighbours]
+    role_model = sample(neighbours, Weights(weights))
+
+    return role_model
+end
+
+function set_next_strategies!(model::Model; weak_selection::Bool = false)
+    if weak_selection
+        for agent in model.agents
+            agent.next_is_cooperator = role_model(model, agent).is_cooperator
+        end
+    else
+        for agent in model.agents
+            neighbours = select_neighbours(model, agent, :learning)
+            best_payoff_agent = sort(neighbours, by = _agent -> _agent.payoff, rev = true)[1]
+            agent.next_is_cooperator = best_payoff_agent.is_cooperator
+        end
     end
 end
 
@@ -126,48 +151,48 @@ function run()
     agent_count = 10^3
     generations = 10^3
 
-    network_type_list = [:scale_free_4]
-    hop_game_list = [1]
-    hop_learning_list = [1, 2, 5]
-    n_game_list = [4]
-    n_learning_list = [4]
-    b_list = [2.0, 3.0]
-    μ = 0.00
+    network_type_list = [:scale_free_4, :scale_free_6, :scale_free_8, :regular_4]
+    hop_game_list = [1, 2, 3, 4, 5]
+    hop_learning_list = [1, 2, 3, 4, 5]
+    n_game_list = [4, 6, 8]
+    n_learning_list = [4, 6, 8]
+    b_list = [2.0, 3.0, 4.0, 5.0]
+    μ_list = [0.00, 0.01]
+    δ_list = [0.1, 0.3, 0.5, 0.7, 0.9]
 
-    simulation_pattern = [(network_type, hop_game, hop_learning, n_game, n_learning, b) for network_type in network_type_list for hop_game in hop_game_list for hop_learning in hop_learning_list for n_game in n_game_list for n_learning in n_learning_list for b in b_list]
+    simulation_pattern = [(network_type, hop_game, hop_learning, n_game, n_learning, b, μ, δ) for network_type in network_type_list for hop_game in hop_game_list for hop_learning in hop_learning_list for n_game in n_game_list for n_learning in n_learning_list for b in b_list for μ in μ_list for δ in δ_list]
     println("simulation_pattern: $(length(simulation_pattern))")
 
     _now = format(now(), "yyyymmdd_HHMMSS")
     file_name = "data/$(_now).csv"
     println("file_name: $(file_name)")
 
-    @time for trial in 1:trial_count
-        println("trial: $(trial)")
+    open(file_name, "w") do io
+        @time for trial in 1:trial_count
+            println("trial: $(trial)")
 
-        file = open(file_name, "a")   # 開けたり閉じたりしすぎるとパフォーマンス劣化。開けっ放しにし過ぎると長時間のシミュレーションで不安定。
+            @time for (network_type, hop_game, hop_learning, n_game, n_learning, b, μ, δ) in simulation_pattern
+                # Generate model
+                graph = make_graph(network_type, agent_count)
+                model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, n_game=n_game, n_learning=n_learning, b=b, μ=μ, δ=δ)
 
-        @time for (network_type, hop_game, hop_learning, n_game, n_learning, b) in simulation_pattern
-            # Generate model
-            graph = make_graph(network_type, agent_count)
-            model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, n_game=n_game, n_learning=n_learning, b=b, μ=μ)
+                # Output initial status of cooperator_rate
+                println(io, join([network_type, hop_game, hop_learning, n_game, n_learning, b, trial, 0, cooperator_rate(model)], ","))
 
-            # Output initial status of cooperator_rate
-            println(file, join([network_type, hop_game, hop_learning, n_game, n_learning, b, trial, 0, cooperator_rate(model)], ","))
+                # Run simulation
+                for step in 1:generations
+                    if 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
+                        calc_payoffs!(model)
+                        set_next_strategies!(model, weak_selection = true)
+                        update_agents!(model)
+                    end
 
-            # Run simulation
-            for step in 1:generations
-                if 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
-                    calc_payoffs!(model)
-                    set_next_strategies!(model)
-                    update_agents!(model)
+                    # Output cooperator_rate every 20 steps.
+                    step % 20 == 0 && println(io, join([network_type, hop_game, hop_learning, n_game, n_learning, b, μ, δ, trial, step, cooperator_rate(model)], ","))
                 end
-
-                # Output cooperator_rate every 20 steps.
-                step % 20 == 0 && println(file, join([network_type, hop_game, hop_learning, n_game, n_learning, b, trial, step, cooperator_rate(model)], ","))
+                flush(io)
             end
         end
-
-        close(file)
     end
 end
 
@@ -233,6 +258,6 @@ end  # module end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     using .Simulation
-    # Simulation.run()
-    Simulation.run_detail()
+    Simulation.run()
+    # Simulation.run_detail()
 end
