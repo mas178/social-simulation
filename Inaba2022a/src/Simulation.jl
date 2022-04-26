@@ -177,7 +177,7 @@ function run()
                 model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, n_game=n_game, n_learning=n_learning, b=b, μ=μ, δ=δ)
 
                 # Output initial status of cooperator_rate
-                println(io, join([network_type, hop_game, hop_learning, n_game, n_learning, b, trial, 0, cooperator_rate(model)], ","))
+                println(io, join([network_type, hop_game, hop_learning, n_game, n_learning, b, μ, δ, trial, 0, cooperator_rate(model)], ","))
 
                 # Run simulation
                 for step in 1:generations
