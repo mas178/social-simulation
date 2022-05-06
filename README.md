@@ -11,3 +11,9 @@
 |[Emergence and Evolution of Cooperation Under Resource Pressure](https://github.com/mas178/social-simulation/tree/main/Pereda2017)|María Pereda, Débora Zurro, José I. Santos, Ivan Briz i Godino, Myrian Álvarez, Jorge Caro & José M. Galán |2017|
 |[The rise and fall of cooperation through reputation and group polarization](https://github.com/mas178/social-simulation/tree/main/Gross2019)|Jörg Gross, and Carsten KW De Dreu|2019|
 |[Cooperation in spatial public good games depends on the locality effects of game, adaptation, and punishment](https://github.com/mas178/social-simulation/tree/main/Okada2021)|Okada, I., Yamamoto, H., Akiyama, E. & Toriumi, F.|2021|
+
+# My original papers
+
+|Title|Author|Year|
+|:--|:--|:-:|
+|[Effect of expanding learning scope on the evolution of cooperation in scale-free networks](https://github.com/mas178/social-simulation/tree/main/Inaba2022a)|Masaaki Inaba, Eizo Akiyama|2022|

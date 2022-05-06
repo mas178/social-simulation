@@ -110,7 +110,7 @@ end
         sim.calc_payoffs!(model, calc_pattern = 2)
     
         # 事後状態
-        @test [agent.payoff for agent in model.agents] ≈ [3.2917, 3.1944, 3.5278, 2.5, 6.75] atol = 10^-4
+        @test [agent.payoff for agent in model.agents] ≈ [2.1944, 2.3958, 2.6458, 1.25, 3.375] atol = 10^-4
     end
     @testset "calc_pattern == 3" begin
         model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
@@ -125,7 +125,7 @@ end
         sim.calc_payoffs!(model, calc_pattern = 2)
     
         # 事後状態
-        @test [agent.payoff for agent in model.agents] ≈ [3.2917, 3.1944, 3.5278, 2.5, 6.75] atol = 10^-4
+        @test [agent.payoff for agent in model.agents] ≈ [2.1944, 2.3958, 2.6458, 1.25, 3.375] atol = 10^-4
     end
 end
 

@@ -49,8 +49,8 @@ cooperator_rate(model::Model)::Float64 = mean([agent.is_cooperator for agent in 
 function calc_payoffs!(model::Model; calc_pattern::Int = 1)
     """
     1: そのまま
-    2: ペイオフを次数で割る
-    3: 拠出金を次数で割る
+    2: ペイオフを隣人数で割る (一回のゲームで得られる平均ペイオフを最終的なペイオフとする)
+    3: 拠出金を隣人数で割る (拠出金の合計が1になるようにする)
     """
     if calc_pattern == 1 || calc_pattern == 2
         for agent in model.agents
@@ -64,12 +64,12 @@ function calc_payoffs!(model::Model; calc_pattern::Int = 1)
         end
         if calc_pattern == 2
             for agent in model.agents
-                agent.payoff = agent.payoff / (length(model.neighbours_game[agent.id]) - 1)
+                agent.payoff /= length(model.neighbours_game[agent.id])
             end
         end
     else
         for agent in model.agents
-            contributions = [neighbor.is_cooperator ? model.c / (length(model.neighbours_game[neighbor.id]) - 1) : 0.0 for neighbor in model.neighbours_game[agent.id]]
+            contributions = [neighbor.is_cooperator ? model.c / length(model.neighbours_game[neighbor.id]) : 0.0 for neighbor in model.neighbours_game[agent.id]]
             payoff = sum(contributions) * model.b / length(model.neighbours_game[agent.id])
 
             for (_agent, contribution) in zip(model.neighbours_game[agent.id], contributions)
@@ -149,18 +149,18 @@ end
 function run()
     println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
 
-    trial_count = 20
+    trial_count = 100
     agent_count = 10^3
     generations = 10^3
 
-    network_type_list = [:scale_free_4, :scale_free_6, :scale_free_8, :regular_4, :random_4]
-    weak_selection_list = [true, false]
+    network_type_list = [:scale_free_4, :regular_4, :random_4]
+    weak_selection_list = [true]  # [true, false]
     calc_payoffs_pattern_list = [1, 2, 3]
-    hop_game_list = [1, 2, 3, 4, 5]
-    hop_learning_list = [1, 2, 3, 4, 5]
-    b_list = [2.0, 3.0, 4.0, 5.0]
-    μ_list = [0.00, 0.01]
-    δ_list = [0.1, 0.3, 0.5, 0.7, 0.9]
+    hop_game_list = [1]  # [1, 2, 3, 4, 5]
+    hop_learning_list = [8, 9, 10]  # [1, 2, 3, 4, 5]
+    b_list = [4.0, 4.5, 5.0, 5.5, 6.0]
+    μ_list = [0.01]
+    δ_list = [0.075, 0.125, 0.25, 0.5, 1.0]
 
     simulation_pattern = vec(collect(Base.product(network_type_list, weak_selection_list, calc_payoffs_pattern_list, hop_game_list, hop_learning_list, b_list, μ_list, δ_list)))
     println("simulation_pattern: $(length(simulation_pattern))")
@@ -181,9 +181,6 @@ function run()
                 # Output initial status of cooperator_rate
                 param_str = join([network_type, weak_selection, calc_pattern, hop_game, hop_learning, b, μ, δ, trial], ",")
                 println(io, join([param_str, 0, cooperator_rate(model)], ","))
-                if weak_selection && calc_pattern == 1 && hop_game == 1 && hop_learning == 1 && b == 2.0 && μ == 0.0 && δ == 0.1
-                    println("$(format(now(), "HH:MM:SS")) $(join([network_type, trial], ","))")
-                end
     
                 # Run simulation
                 for step in 1:generations
@@ -193,8 +190,8 @@ function run()
                         update_agents!(model)
                     end
     
-                    # Output cooperator_rate every 25 steps.
-                    step % 25 == 0 && println(io, join([param_str, step, cooperator_rate(model)], ","))
+                    # Output cooperator_rate every 10 steps.
+                    step % 10 == 0 && println(io, join([param_str, step, cooperator_rate(model)], ","))
                 end
                 flush(io)
             end
