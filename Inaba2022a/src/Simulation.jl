@@ -146,21 +146,30 @@ function str(graph::SimpleGraph)::String
     join(edge_list, ",")
 end
 
-function run()
+function run(;detail::Bool = false)
     println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
 
     trial_count = 100
     agent_count = 10^3
     generations = 10^3
 
-    network_type_list = [:scale_free_4, :regular_4, :random_4]
-    weak_selection_list = [true]  # [true, false]
-    calc_payoffs_pattern_list = [1, 2, 3]
-    hop_game_list = [1]  # [1, 2, 3, 4, 5]
-    hop_learning_list = [8, 9, 10]  # [1, 2, 3, 4, 5]
-    b_list = [4.0, 4.5, 5.0, 5.5, 6.0]
-    μ_list = [0.01]
-    δ_list = [0.075, 0.125, 0.25, 0.5, 1.0]
+    # network_type_list = [:scale_free_4, :regular_4, :random_4]
+    # weak_selection_list = [true]  # [true, false]
+    # calc_payoffs_pattern_list = [1, 2, 3]  # [1, 2, 3]
+    # hop_game_list = [1]  # [1, 2, 3, 4, 5]
+    # hop_learning_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # [1, 2, 3, 4, 5]
+    # b_list = [4.0, 4.5, 5.0, 5.5, 6.0]  # [4.0, 4.5, 5.0, 5.5, 6.0]
+    # μ_list = [0.0, 0.01]  # [0.0, 0.01]
+    # δ_list = [0.0625, 0.125, 0.25, 0.5, 1.0]  # [0.0625, 0.125, 0.25, 0.5, 1.0]
+
+    network_type_list = [:scale_free_4, :random_4]
+    weak_selection_list = [true]
+    calc_payoffs_pattern_list = [1]
+    hop_game_list = [1]
+    hop_learning_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    b_list = [5.0]
+    μ_list = [0.0]
+    δ_list = [1.0]
 
     simulation_pattern = vec(collect(Base.product(network_type_list, weak_selection_list, calc_payoffs_pattern_list, hop_game_list, hop_learning_list, b_list, μ_list, δ_list)))
     println("simulation_pattern: $(length(simulation_pattern))")
@@ -180,86 +189,41 @@ function run()
     
                 # Output initial status of cooperator_rate
                 param_str = join([network_type, weak_selection, calc_pattern, hop_game, hop_learning, b, μ, δ, trial], ",")
-                println(io, join([param_str, 0, cooperator_rate(model)], ","))
+                detail || println(io, join([param_str, 0, cooperator_rate(model)], ","))
     
                 # Run simulation
                 for step in 1:generations
                     if 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
                         calc_payoffs!(model, calc_pattern = calc_pattern)
                         set_next_strategies!(model, weak_selection = weak_selection)
+
+                        # save payoff and strategy
+                        detail && for agent in model.agents
+                            println(io, join([
+                                param_str,
+                                step, agent.id,
+                                agent.is_cooperator, 
+                                round(agent.payoff, digits=3),
+                                degree(model.graph, agent.id)
+                            ], ","))
+                        end
+
                         update_agents!(model)
                     end
     
                     # Output cooperator_rate every 10 steps.
-                    step % 10 == 0 && println(io, join([param_str, step, cooperator_rate(model)], ","))
+                    (!detail && step % 10 == 0) && println(io, join([param_str, step, cooperator_rate(model)], ","))
                 end
                 flush(io)
             end
         end    
     end
 end
-
-# function run_detail()
-#     println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
-
-#     trial_count = 100
-#     agent_count = 10^3
-#     generations = 10^3
-
-#     network_type = :scale_free_4
-#     hop_game = 1
-#     μ = 0.01
-
-#     b_list = [2.0, 3.0]
-#     hop_learning_list = [1, 2, 5]
-
-#     simulation_pattern = [(hop_learning, b) for hop_learning in hop_learning_list for b in b_list]
-
-#     # file names
-#     _now = format(now(), "yyyymmdd_HHMMSS")
-#     file_name_detail = "data/$(_now)_detail.csv"
-
-#     # file open
-#     file_detail = open(file_name_detail, "w")
-
-#     @time for trial in 1:trial_count
-#         println("trial: $(trial)")
-#         @time for (hop_learning, b) in simulation_pattern
-#             # Generate model
-#             model = Model(make_graph(network_type, agent_count); hop_game=hop_game, hop_learning=hop_learning, b=b, μ=μ)
-
-#             # Run simulation
-#             for step in 1:generations
-#                 calc_payoffs!(model)
-#                 set_next_strategies!(model)
-
-#                 # save payoff and strategy
-#                 for agent in model.agents
-#                     println(file_detail, join([
-#                         b,
-#                         hop_learning,
-#                         trial,
-#                         step,
-#                         agent.id,
-#                         agent.is_cooperator ? "C" : "D",
-#                         round(agent.payoff, digits=3),
-#                         degree(model.graph, agent.id)
-#                     ], ","))
-#                 end
-
-#                 update_agents!(model)
-#             end
-#         end
-#     end
-
-#     close(file_detail)
-# end
-
 end  # module end
 
 # julia --threads 10 src/Simulation.jl
 if abspath(PROGRAM_FILE) == @__FILE__
     using .Simulation
-    Simulation.run()
-    # Simulation.run_detail()
+    # Simulation.run()
+    Simulation.run(detail = true)
 end
