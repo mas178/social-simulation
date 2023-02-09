@@ -226,85 +226,99 @@ end
 function run()
     println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
 
-    trial_count = 28
+    #---------
+    # 全体の様子を確認するためのパラメータ
+    #---------
+    # trial_count = 8
+    # agent_count = 10^3  # 10^4
+    # generations = 10^4  # 10^5
+
+    # network_type_list = [:scale_free_4, :regular_4, :random_4]  # [:scale_free_4, :regular_4, :random_4]
+    # hop_game_list = [1, 2, 3, 4, 5, 6]  # [1, 2, 3, 4, 5, 6]
+    # hop_learning_list = [1, 2, 3, 4, 5, 6]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    # b_list = [3.0, 4.0, 5.0, 6.0]  # [4.0, 4.5, 5.0, 5.5, 6.0]
+    # μ_list = [0.0, 0.01]  # [0.0, 0.01]
+    # δ_list = [0.0625, 0.25, 1.0]  # [0.0625, 0.125, 0.25, 0.5, 1.0]
+    # interaction_rule_list = [PairWise, Group]  # [PairWise, Group]
+    # update_rule_list = [BD, DB, IM]  # [BD, DB, IM]
+
+    #---------
+    # hopGの増加に伴う鋭い山を確認するためのパラメータ
+    #---------
+    # trial_count = 24
+    # agent_count = 10^4  # 10^4
+    # generations = 10^5  # 10^5
+
+    # network_type_list = [:random_4]  # [:scale_free_4, :regular_4, :random_4]
+    # hop_game_list = [1, 2, 3]  # [1, 2, 3, 4, 5, 6]
+    # hop_learning_list = [1]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    # b_list = [6.0]  # [4.0, 4.5, 5.0, 5.5, 6.0]
+    # μ_list = [0.0]  # [0.0, 0.01]
+    # δ_list = [1.0]  # [0.0625, 0.125, 0.25, 0.5, 1.0]
+    # interaction_rule_list = [PairWise]  # [PairWise, Group]
+    # update_rule_list = [IM]  # [BD, DB, IM]
+
+    #---------
+    # レギュラーグラフ / SFについて調べるパラメータ
+    #---------
+    # trial_count = 24
+    # agent_count = 10^3  # 10^4
+    # generations = 10^4  # 10^5
+
+    # network_type_list = [:scale_free_4]
+    # hop_game_list = [1]
+    # hop_learning_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    # b_list = [4.0, 5.0, 6.0]
+    # μ_list = [0.0]
+    # δ_list = [1.0]
+    # interaction_rule_list = [PairWise, Group]
+    # update_rule_list = [BD, DB, IM]
+
+    #---------
+    # ペアワイズの利得表を修正したバージョン
+    #---------
+    trial_count = 8
     agent_count = 10^3  # 10^4
-    generations = 10^6  # 10^5
-    network_type_list = [:regular_4]  # [:scale_free_4, :regular_4, :random_4]
+    generations = 10^4  # 10^5
+
+    network_type_list = [:scale_free_4]  # [:scale_free_4, :regular_4, :random_4]
     hop_game_list = [1]  # [1, 2, 3, 4, 5, 6]
-    hop_learning_list = [1, 2, 3, 4, 5, 6]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    b_list = [1.1]  # [4.0, 4.5, 5.0, 5.5, 6.0] [1.1, 1.2, 1.3, 1.4, 1.5]
+    hop_learning_list = [1, 4, 6]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    b_list = [5.0]  # [4.0, 4.5, 5.0, 5.5, 6.0]
     μ_list = [0.0]  # [0.0, 0.01]
-    δ_list = [0.01]  # [0.01, 0.1, 0.5, 1.0]
-    interaction_rule_list = [PairWise]  # [PairWise, Group]
+    δ_list = [1.0]  # [0.01, 0.1, 0.5, 1.0]
+    interaction_rule_list = [Group]  # [PairWise, Group]
     update_rule_list = [DB]  # [BD, DB, IM]
 
     simulation_pattern = vec(collect(Base.product(network_type_list, hop_game_list, hop_learning_list, b_list, μ_list, δ_list, interaction_rule_list, update_rule_list)))
     println("simulation_pattern: $(length(simulation_pattern))")
 
-    _now = format(now(), "yyyymmdd_HHMMSS")
-    mkdir("data/$(_now)")
+    for trial in 1:trial_count
+        for (network_type, hop_game, hop_learning, b, μ, δ, interaction_rule, update_rule) in simulation_pattern
+            # Generate model
+            seed!(abs(rand(Int)))
+            graph = make_graph(network_type, agent_count)
+            model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, b=b, μ=μ, δ=δ, interaction_rule=interaction_rule, update_rule=update_rule)
 
-    Threads.@threads for trial in 1:trial_count
-        file_name = "data/$(_now)/$(trial).csv"
-        println("file_name: $(file_name)")
-        counter = 0
+            # Output initial status of cooperator_rate
+            param_str = join([trial, hop_game, hop_learning], ",")
+            cooperator_rate_list = []
 
-        open(file_name, "w") do io
-            @time for (network_type, hop_game, hop_learning, b, μ, δ, interaction_rule, update_rule) in simulation_pattern
-                # Generate model
-                seed!(abs(rand(Int)))
-                graph = make_graph(network_type, agent_count)
-                model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, b=b, μ=μ, δ=δ, interaction_rule=interaction_rule, update_rule=update_rule)
-
-                # Output initial status of cooperator_rate
-                param_str = join([network_type, hop_game, hop_learning, b, μ, δ, interaction_rule, update_rule, trial], ",")
-                # println(io, join([param_str, 0, cooperator_rate(model)], ","))
-                cooperator_rate_list = []
-
-                # Run simulation
-                for step in 1:generations
-                    if μ != 0.0 || 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
-                        calc_payoffs!(model)
-                        update_fitness!(model)
-                        update_strategies!(model)
-                        update_agents!(model)
-                    end
-
-                    # Log
-                    if step >= generations * 0.9
-                        push!(cooperator_rate_list, cooperator_rate(model))
-                    end
+            # Run simulation
+            for step in 1:generations
+                if μ != 0.0 || 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
+                    calc_payoffs!(model)
+                    update_fitness!(model)
+                    update_strategies!(model)
+                    update_agents!(model)
                 end
-                println(io, join([param_str, mean(cooperator_rate_list)], ","))
-                flush(io)
 
-                # show progress
-                counter += 1
-                if counter % 100 == 0
-                    println("$(format(now(), "HH:MM:SS")) $(file_name) $(counter / length(simulation_pattern) * 100)%")
+                # Log
+                if step >= generations * 0.9
+                    push!(cooperator_rate_list, cooperator_rate(model))
                 end
             end
-        end
-    end
-end
-
-function analyze_networks()
-    network_type_list = [:scale_free_4, :regular_4, :random_4]
-    hop_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    N = 1000
-
-    network_pattern = vec(collect(Base.product(hop_list, network_type_list)))
-
-    file_name = "data/degrees.csv"
-    open(file_name, "w") do io
-        for (hop, network_type) in network_pattern
-            graph = make_graph(network_type, N)
-            model = Model(graph; hop_game=hop, hop_learning=1, b=0.0, μ=0.0, δ=0.0, interaction_rule=PairWise, update_rule=BD)
-            for _id in 1:N
-                for agent in model.neighbours_game[_id]
-                    println(io, join([network_type, hop, _id, agent.id], ","))
-                end
-            end
+            println(join([param_str, mean(cooperator_rate_list)], ","))
         end
     end
 end
@@ -312,12 +326,10 @@ end
 end  # module end
 
 # cd ~/Dropbox/workspace/social-simulation/Inaba2022a
-# julia --threads 8 src/Simulation.jl &
-# julia src/Simulation.jl &
-# nohup julia --threads 8 src/Simulation.jl > out.log &
+# julia src/SimulationRepSpike.jl
 if abspath(PROGRAM_FILE) == @__FILE__
     using .Simulation
-    # Simulation.run()
+    Simulation.run()
 
-    Simulation.analyze_networks()
+    # Simulation.analyze_networks()
 end

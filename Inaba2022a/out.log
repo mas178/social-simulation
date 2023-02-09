@@ -1,0 +1,58 @@
+running on Julia 1.8.2 (8 Threads)
+simulation_pattern: 6
+file_name: data/20221105_233925/1.csv
+file_name: data/20221105_233925/5.csv
+file_name: data/20221105_233925/26.csv
+file_name: data/20221105_233925/20.csv
+file_name: data/20221105_233925/9.csv
+file_name: data/20221105_233925/13.csv
+file_name: data/20221105_233925/23.csv
+file_name: data/20221105_233925/17.csv
+ 15.766659 seconds (1.15 G allocations: 95.214 GiB, 47.57% gc time, 0.99% compilation time)
+file_name: data/20221105_233925/2.csv
+ 15.775720 seconds (1.16 G allocations: 95.309 GiB, 47.54% gc time, 1.00% compilation time)
+file_name: data/20221105_233925/18.csv
+ 17.306628 seconds (1.30 G allocations: 104.710 GiB, 47.59% gc time, 0.94% compilation time)
+file_name: data/20221105_233925/24.csv
+ 17.414673 seconds (1.67 G allocations: 109.202 GiB, 48.08% gc time)
+file_name: data/20221105_233925/25.csv
+ 15.791565 seconds (1.49 G allocations: 97.267 GiB, 48.29% gc time)
+159.268260 seconds (14.49 G allocations: 951.921 GiB, 46.47% gc time, 0.10% compilation time)
+file_name: data/20221105_233925/27.csv
+159.419870 seconds (14.50 G allocations: 952.743 GiB, 46.46% gc time, 0.10% compilation time)
+file_name: data/20221105_233925/21.csv
+159.583627 seconds (14.51 G allocations: 953.269 GiB, 46.48% gc time, 0.10% compilation time)
+file_name: data/20221105_233925/14.csv
+160.070867 seconds (14.54 G allocations: 955.783 GiB, 46.48% gc time, 0.10% compilation time)
+file_name: data/20221105_233925/10.csv
+160.529934 seconds (14.57 G allocations: 958.344 GiB, 46.48% gc time, 0.10% compilation time)
+file_name: data/20221105_233925/6.csv
+ 13.202700 seconds (622.58 M allocations: 71.441 GiB, 44.48% gc time)
+file_name: data/20221105_233925/22.csv
+158.848543 seconds (14.07 G allocations: 939.657 GiB, 46.16% gc time)
+file_name: data/20221105_233925/3.csv
+ 14.556370 seconds (687.84 M allocations: 79.213 GiB, 44.03% gc time)
+file_name: data/20221105_233925/11.csv
+ 14.384665 seconds (676.16 M allocations: 78.220 GiB, 44.11% gc time)
+file_name: data/20221105_233925/7.csv
+160.957194 seconds (14.23 G allocations: 951.144 GiB, 46.15% gc time)
+file_name: data/20221105_233925/19.csv
+ 15.026023 seconds (1.30 G allocations: 87.395 GiB, 45.64% gc time)
+file_name: data/20221105_233925/8.csv
+152.190756 seconds (14.04 G allocations: 904.524 GiB, 45.23% gc time)
+file_name: data/20221105_233925/15.csv
+155.894420 seconds (14.32 G allocations: 925.653 GiB, 45.26% gc time)
+file_name: data/20221105_233925/28.csv
+151.871059 seconds (14.25 G allocations: 904.367 GiB, 45.33% gc time)
+file_name: data/20221105_233925/4.csv
+154.689438 seconds (14.40 G allocations: 919.465 GiB, 45.31% gc time)
+156.117160 seconds (14.53 G allocations: 927.444 GiB, 45.30% gc time)
+file_name: data/20221105_233925/12.csv
+155.197788 seconds (14.47 G allocations: 922.306 GiB, 45.27% gc time)
+154.179116 seconds (14.22 G allocations: 906.426 GiB, 44.78% gc time)
+115.514544 seconds (8.84 G allocations: 583.136 GiB, 35.03% gc time)
+file_name: data/20221105_233925/16.csv
+115.404166 seconds (8.68 G allocations: 577.426 GiB, 34.50% gc time)
+109.513798 seconds (8.07 G allocations: 532.242 GiB, 32.96% gc time)
+  8.998949 seconds (170.53 M allocations: 31.171 GiB, 25.70% gc time)
+108.008539 seconds (7.80 G allocations: 513.172 GiB, 31.93% gc time)

@@ -1,6 +1,7 @@
 module SimulationTest
 using Graphs
 using Statistics: mean
+using Random
 using Test: @testset, @test, @test_throws
 
 include("../src/Simulation.jl")
@@ -12,14 +13,15 @@ println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
     @testset "Deterministic test" begin
         agent = sim.Agent(1)
         @test agent.id == 1
-        @test agent.next_is_cooperator == false
+        @test agent.next_strategy == sim.D
         @test agent.payoff == 0.0
+        @test agent.fitness == 0.0
     end
 
     # is_cooperatorが50%程度の確率で設定されていることを確認。
     @testset "Probabilistic test" begin
         agents = [sim.Agent(id) for id in 1:1000]
-        average_cooperator_rate = mean([agent.is_cooperator for agent in agents])
+        average_cooperator_rate = mean([agent.strategy == sim.C for agent in agents])
         @test average_cooperator_rate ≈ 0.5 atol = 0.1
     end
 end
@@ -27,7 +29,7 @@ end
 @testset "Model" begin
     @testset "simple test" begin
         graph = cycle_graph(5)
-        model = sim.Model(graph, hop_game = 2, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0)
+        model = sim.Model(graph, hop_game = 2, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
 
         @test model.graph == graph
         @test model.hop_game == 2
@@ -35,42 +37,53 @@ end
         @test model.b == 6.0
         @test model.c == 1.0
         @test model.μ == 0.0
+        @test model.interaction_rule == sim.PairWise
+        @test model.update_rule == sim.DB
         @test [agent.id for agent in model.agents] == [1, 2, 3, 4, 5]
     end
 
     @testset "neighbours' test for simple network" begin
         graph = cycle_graph(9)
-        model = sim.Model(graph, hop_game = 2, hop_learning = 3, b = 6.0, μ = 0.0, δ = 1.0)
-        @test sort([agent.id for agent in model.neighbours_game[1]]) == [1, 2, 3, 8, 9]
-        @test sort([agent.id for agent in model.neighbours_game[5]]) == [3, 4, 5, 6, 7]
-        @test sort([agent.id for agent in model.neighbours_game[9]]) == [1, 2, 7, 8, 9]
-        @test sort([agent.id for agent in model.neighbours_learning[1]]) == [1, 2, 3, 4, 7, 8, 9]
-        @test sort([agent.id for agent in model.neighbours_learning[5]]) == [2, 3, 4, 5, 6, 7, 8]
-        @test sort([agent.id for agent in model.neighbours_learning[9]]) == [1, 2, 3, 6, 7, 8, 9]
+        model = sim.Model(graph, hop_game = 2, hop_learning = 3, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+        @test sort([agent.id for agent in model.neighbours_game[1]]) == [2, 3, 8, 9]
+        @test sort([agent.id for agent in model.neighbours_game[5]]) == [3, 4, 6, 7]
+        @test sort([agent.id for agent in model.neighbours_game[9]]) == [1, 2, 7, 8]
+        @test sort([agent.id for agent in model.neighbours_learning[1]]) == [2, 3, 4, 7, 8, 9]
+        @test sort([agent.id for agent in model.neighbours_learning[5]]) == [2, 3, 4, 6, 7, 8]
+        @test sort([agent.id for agent in model.neighbours_learning[9]]) == [1, 2, 3, 6, 7, 8]
 
         # ホップ数がネットワークの規模を超える場合、全てのノードが隣人として選択される
-        model = sim.Model(graph, hop_game = 20, hop_learning = 20, b = 6.0, μ = 0.0, δ = 1.0)
-        @test sort([agent.id for agent in model.neighbours_game[1]]) == [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        @test sort([agent.id for agent in model.neighbours_learning[1]]) == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        model = sim.Model(graph, hop_game = 20, hop_learning = 20, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+        @test sort([agent.id for agent in model.neighbours_game[1]]) == [2, 3, 4, 5, 6, 7, 8, 9]
+        @test sort([agent.id for agent in model.neighbours_learning[1]]) == [2, 3, 4, 5, 6, 7, 8, 9]
     end
 
     @testset "neighbours' test for complex network" begin
         graph = barabasi_albert(100, 2)
-        model = sim.Model(graph, hop_game = 1, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0)
-        @test sort([agent.id for agent in model.neighbours_game[1]]) == sort(neighborhood(graph, 1, 1))
-        @test sort([agent.id for agent in model.neighbours_game[50]]) == sort(neighborhood(graph, 50, 1))
-        @test sort([agent.id for agent in model.neighbours_game[100]]) == sort(neighborhood(graph, 100, 1))
+        model = sim.Model(graph, hop_game = 1, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+        @test sort([agent.id for agent in model.neighbours_game[1]]) == [_id for _id in sort(neighborhood(graph, 1, 1)) if _id != 1]
+        @test sort([agent.id for agent in model.neighbours_game[50]]) == [_id for _id in sort(neighborhood(graph, 50, 1)) if _id != 50]
+        @test sort([agent.id for agent in model.neighbours_game[100]]) == [_id for _id in sort(neighborhood(graph, 100, 1)) if _id != 100]
         model.neighbours_game[100]
-        @test length(model.neighbours_game[100]) == 3  # BAモデルで最後に追加されるノードの次数はk
-        @test sort([agent.id for agent in model.neighbours_learning[1]]) == sort(neighborhood(graph, 1, 2))
-        @test sort([agent.id for agent in model.neighbours_learning[50]]) == sort(neighborhood(graph, 50, 2))
-        @test sort([agent.id for agent in model.neighbours_learning[100]]) == sort(neighborhood(graph, 100, 2))
+        @test length(model.neighbours_game[100]) == 2  # BAモデルで最後に追加されるノードの次数はk
+        @test sort([agent.id for agent in model.neighbours_learning[1]]) == [_id for _id in sort(neighborhood(graph, 1, 2)) if _id != 1]
+        @test sort([agent.id for agent in model.neighbours_learning[50]]) == [_id for _id in sort(neighborhood(graph, 50, 2)) if _id != 50]
+        @test sort([agent.id for agent in model.neighbours_learning[100]]) == [_id for _id in sort(neighborhood(graph, 100, 2)) if _id != 100]
 
         # ホップ数がネットワークの規模を超える場合、全てのノードが隣人として選択される
-        model = sim.Model(graph, hop_game = 6, hop_learning = 6, b = 6.0, μ = 0.0, δ = 1.0)
-        @test sort([agent.id for agent in model.neighbours_game[25]]) == 1:100
-        @test sort([agent.id for agent in model.neighbours_learning[75]]) == 1:100
+        model = sim.Model(graph, hop_game = 6, hop_learning = 6, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+        @test sort([agent.id for agent in model.neighbours_game[25]]) == [_id for _id in 1:100 if _id != 25]
+        @test sort([agent.id for agent in model.neighbours_learning[75]]) == [_id for _id in 1:100 if _id != 75]
     end
+end
+
+@testset "cooperator_rate" begin
+    graph = barabasi_albert(10^3, 2)
+    model = sim.Model(graph, hop_game = 6, hop_learning = 6, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+    for agent in model.agents
+        agent.strategy = (agent.id % 5 == 0 ? sim.C : sim.D)
+    end
+    @test sim.cooperator_rate(model) == 0.2
 end
 
 @testset "calc_payoffs!" begin
@@ -80,136 +93,124 @@ end
     add_edge!(g, 3, 1)
     add_edge!(g, 2, 4)
     add_edge!(g, 3, 5)
-    model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
+    model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
 
-    @testset "calc_pattern == 1" begin
-        model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
-
+    @testset "interaction_rule == PairWise" begin
         # 事前状態
+        model.interaction_rule = sim.PairWise
         for agent in model.agents
-            agent.is_cooperator = agent.id % 2
+            agent.strategy = agent.id % 2 == 1 ? sim.C : sim.D
+            agent.payoff = 0.0
         end
-        @test [agent.is_cooperator for agent in model.agents] == [true, false, true, false, true]
-        @test [agent.payoff for agent in model.agents] == [0, 0, 0, 0, 0]
+    
+        sim.calc_payoffs!(model)
+    
+        # 事後状態
+        @test [agent.payoff for agent in model.agents] == [0.9999, 2.4, 1.9999, 0.0, 1.0]
+    end
+    @testset "interaction_rule == Group" begin
+        # 事前状態
+        model.interaction_rule = sim.Group
+        for agent in model.agents
+            agent.strategy = agent.id % 2 == 1 ? sim.C : sim.D
+            agent.payoff = 0.0
+        end
     
         sim.calc_payoffs!(model)
     
         # 事後状態
         @test [agent.payoff for agent in model.agents] ≈ [6.5833, 9.5833, 10.5833, 2.5, 6.75] atol = 10^-4
     end
-    @testset "calc_pattern == 2" begin
-        model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
-
-        # 事前状態
-        for agent in model.agents
-            agent.is_cooperator = agent.id % 2
-        end
-        @test [agent.is_cooperator for agent in model.agents] == [true, false, true, false, true]
-        @test [agent.payoff for agent in model.agents] == [0, 0, 0, 0, 0]
-    
-        sim.calc_payoffs!(model, calc_pattern = 2)
-    
-        # 事後状態
-        @test [agent.payoff for agent in model.agents] ≈ [2.1944, 2.3958, 2.6458, 1.25, 3.375] atol = 10^-4
-    end
-    @testset "calc_pattern == 3" begin
-        model = sim.Model(g, hop_game = 1, hop_learning = 2, b = 5.0, μ = 0.0, δ = 1.0)
-
-        # 事前状態
-        for agent in model.agents
-            agent.is_cooperator = agent.id % 2
-        end
-        @test [agent.is_cooperator for agent in model.agents] == [true, false, true, false, true]
-        @test [agent.payoff for agent in model.agents] == [0, 0, 0, 0, 0]
-    
-        sim.calc_payoffs!(model, calc_pattern = 2)
-    
-        # 事後状態
-        @test [agent.payoff for agent in model.agents] ≈ [2.1944, 2.3958, 2.6458, 1.25, 3.375] atol = 10^-4
-    end
 end
 
-@testset "role_model and payoff_to_fitness" begin
-    model = sim.Model(cycle_graph(5), hop_game=2, hop_learning=2, b=6.0, μ=0.0, δ = 0.1)
-    [agent.payoff = i for (i, agent) in enumerate(model.agents)]
+@testset "update_fitness!" begin
+    graph = barabasi_albert(10, 2)
+    model = sim.Model(graph, hop_game = 6, hop_learning = 6, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+    [agent.payoff = agent.id for agent in model.agents]
 
-    counters = [0, 0, 0, 0, 0]
-    trial = 10^4
-    fitness_vec = [sim.payoff_to_fitness(a.payoff, 0.1) for a in model.agents]
-    @test fitness_vec == [1.0, 1.1, 1.2, 1.3, 1.4]
+    model.δ = 1.0
+    sim.update_fitness!(model)
+    @test [agent.fitness for agent in model.agents] == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 
-    for _ in 1:trial
-        counters[sim.role_model(model, model.agents[1], true).id] += 1
-    end
-
-    @test counters / trial ≈ fitness_vec / sum(fitness_vec) atol = 0.1
+    model.δ = 0.1
+    sim.update_fitness!(model)
+    @test [agent.fitness for agent in model.agents] ≈ [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
 end
 
-@testset "set_next_strategies!" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, b = 5.0, μ = 0.0, δ = 0.1)
+@testset "update_strategies!" begin
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, b = 5.0, μ = 0.0, δ = 0.1, interaction_rule=sim.PairWise, update_rule=sim.DB)
 
-    @testset "If the collaborators have a high payoff, the next generation will all be collaborators." begin
+    @testset "BD" begin
         # 事前状態
+        Random.seed!(1)
+        model.update_rule = sim.BD
         for agent in model.agents
-            agent.is_cooperator = agent.id % 2
-            agent.payoff = agent.id % 2
+            agent.strategy = agent.id % 2 == 1 ? sim.C : sim.D
+            agent.fitness = agent.id % 2
         end
-        @test [agent.is_cooperator for agent in model.agents] == [true, false, true, false, true]
-        @test [agent.payoff for agent in model.agents] == [1, 0, 1, 0, 1]
+        @test [agent.strategy for agent in model.agents] == [sim.C, sim.D, sim.C, sim.D, sim.C]
+        @test [agent.fitness for agent in model.agents] == [1, 0, 1, 0, 1]
 
-        sim.set_next_strategies!(model)
+        sim.update_strategies!(model)
 
         # 事後状態
-        @test [agent.next_is_cooperator for agent in model.agents] == [true, true, true, true, true]
+        @test [agent.next_strategy for agent in model.agents] == [sim.D, sim.D, sim.D, sim.D, sim.C]
     end
 
-    @testset "If the defectors have a high payoff, the next generation will all be defectors." begin
+    @testset "DB" begin
         # 事前状態
+        Random.seed!(1)
+        model.update_rule = sim.DB
         for agent in model.agents
-            agent.is_cooperator = (agent.id + 1) % 2
-            agent.payoff = agent.id % 2
+            agent.strategy = agent.id % 2 == 1 ? sim.C : sim.D
+            agent.fitness = agent.id % 2
         end
-        @test [agent.is_cooperator for agent in model.agents] == [false, true, false, true, false]
-        @test [agent.payoff for agent in model.agents] == [1, 0, 1, 0, 1]
+        @test [agent.strategy for agent in model.agents] == [sim.C, sim.D, sim.C, sim.D, sim.C]
+        @test [agent.fitness for agent in model.agents] == [1, 0, 1, 0, 1]
 
-        sim.set_next_strategies!(model)
+        sim.update_strategies!(model)
 
         # 事後状態
-        @test [agent.next_is_cooperator for agent in model.agents] == [false, false, false, false, false]
+        @test [agent.next_strategy for agent in model.agents] == [sim.C, sim.C, sim.C, sim.C, sim.C]
     end
 
-    @testset "Weak Selection" begin
-        counters = [0, 0, 0, 0, 0]
-        trial = 10^4
-
-        for _ in 1:trial
-            model = sim.Model(cycle_graph(5), hop_game=2, hop_learning=2, b=6.0, μ=0.0, δ = 0.1)
-            [agent.payoff = i for (i, agent) in enumerate(model.agents)]
-            [agent.is_cooperator = (i ∈ [1, 2]) for (i, agent) in enumerate(model.agents)]
-
-            sim.set_next_strategies!(model, weak_selection=true)
-            counters += [a.next_is_cooperator for a in model.agents]
+    @testset "IM" begin
+        # 事前状態
+        Random.seed!(1)
+        model.update_rule = sim.IM
+        for agent in model.agents
+            agent.strategy = agent.id % 2 == 1 ? sim.C : sim.D
+            agent.payoff = agent.id % 2
         end
-        @test counters / trial ≈ [0.35, 0.35, 0.35, 0.35, 0.35] atol = 0.025
+        @test [agent.strategy for agent in model.agents] == [sim.C, sim.D, sim.C, sim.D, sim.C]
+        @test [agent.payoff for agent in model.agents] == [1, 0, 1, 0, 1]
+
+        sim.update_strategies!(model)
+
+        # 事後状態
+        @test [agent.next_strategy for agent in model.agents] == [sim.C, sim.C, sim.C, sim.C, sim.C]
     end
 end
 
 @testset "update_agents!" begin
-    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0)
+    model = sim.Model(cycle_graph(5), hop_game = 2, hop_learning = 2, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
 
     # 事前状態
     for agent in model.agents
-        agent.is_cooperator = false
-        agent.next_is_cooperator = agent.id % 2
+        agent.strategy = sim.D
+        agent.next_strategy = (agent.id % 2 == 1 ? sim.C : sim.D)
         agent.payoff = 123.5
+        agent.fitness = 123.5
     end
 
     sim.update_agents!(model)
 
     # 事後状態
     for agent in model.agents
-        @test agent.is_cooperator == agent.id % 2
+        @test agent.strategy == (agent.id % 2 == 1 ? sim.C : sim.D)
+        @test agent.next_strategy == (agent.id % 2 == 1 ? sim.C : sim.D)
         @test agent.payoff == 0.0
+        @test agent.fitness == 0.0
     end
 end
 
@@ -290,47 +291,19 @@ end
         @test C ≈ 4 / N atol = 0.005
     end
 end
+@testset "degree_check" begin
+    N = 1000
+    graph = sim.make_graph(:scale_free_4, N)
 
-@testset "calc_payoffs! + set_next_strategies! + update_strategies!" begin
-    @testset "b = 3, oneshot" begin
-        cooperator_rates = []
-        for trial in 1:1000
-            model = sim.Model(barabasi_albert(100, 2), hop_game = 2, hop_learning = 2, b = 3.0, μ = 0.0, δ = 1.0)
-            sim.calc_payoffs!(model)
-            sim.set_next_strategies!(model)
-            sim.update_agents!(model)
-            push!(cooperator_rates, sim.cooperator_rate(model))
-        end
-        @test mean(cooperator_rates) ≈ 0.358 atol = 0.01
-    end
-
-    @testset "b = 4, hop = 1, 10-loop" begin
-        cooperator_rates = []
-        for trial in 1:100
-            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, b = 4.0, μ = 0.0, δ = 1.0)
-            for step in 1:10
-                sim.calc_payoffs!(model)
-                sim.set_next_strategies!(model)
-                sim.update_agents!(model)
+    file_name = "data/degrees.csv"
+    open(file_name, "w") do io
+        for hop_learning in 1:10
+            model = sim.Model(graph, hop_game = 1, hop_learning = hop_learning, b = 6.0, μ = 0.0, δ = 1.0, interaction_rule=sim.PairWise, update_rule=sim.DB)
+            degrees = [length(nodes) for nodes in model.neighbours_learning]
+            for degree in degrees
+                println(io, join([hop_learning, degree], ","))
             end
-            push!(cooperator_rates, sim.cooperator_rate(model))
-        end
-        @test mean(cooperator_rates) ≈ 0.828 atol = 0.01
-    end
-
-    @testset "b = 2, hop = 1, 10-loop" begin
-        cooperator_rates = []
-        for trial in 1:100
-            model = sim.Model(barabasi_albert(1000, 2), hop_game = 1, hop_learning = 1, b = 2.0, μ = 0.0, δ = 1.0)
-            for step in 1:10
-                sim.calc_payoffs!(model)
-                sim.set_next_strategies!(model)
-                sim.update_agents!(model)
-            end
-            push!(cooperator_rates, sim.cooperator_rate(model))
-        end
-        @test mean(cooperator_rates) ≈ 0.123 atol = 0.01
+        end    
     end
 end
-
 end
