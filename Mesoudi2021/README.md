@@ -11,4 +11,4 @@ Available at: https://acerbialberto.com/IBM-cultevo/
 
 # Index
 
-- [Model 1: Unbiased transmission]()
+- [Model 1: Unbiased transmission](https://github.com/mas178/social-simulation/blob/main/Mesoudi2021/model01_unbiased_transmission.ipynb)
