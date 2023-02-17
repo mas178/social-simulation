@@ -1,6 +1,6 @@
 # What is this?
 
-This repository is a rough translation of the following super-helpful tutorials into Julia.
+This is a Julia version of the following super-helpful tutorials about Cultural Evolution.
 This is for my own understanding, so if you want to understand it accurately, please refer to the originals.
 
 - Mesoudi, Alex (2021) Simulation models of cultural evolution in R. [doi:10.5281/zenodo.5155821](https://zenodo.org/record/5877409).
