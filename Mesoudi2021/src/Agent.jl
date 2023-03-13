@@ -1,7 +1,7 @@
 module Agent
 
 using DataFrames
-export make_agent_df, trait_ratio, flip_AB, flip_ABC, trait2trait, A, B, C, X, Y
+export make_agent_df, trait_ratio, A, B, C, X, Y
 
 @enum Trait A B C X Y
 
@@ -19,16 +19,16 @@ end
 
 # for model 4a
 function make_agent_df(N::Int64, p_0::Float64, s::Float64)::DataFrame
-    trait_df = make_trait_df(N, p_0)
-    trait_df.payoff = [t == A ? 1.0 + s : 1.0 for t in trait_df.trait]
-    return trait_df
+    agent_df = make_agent_AB_df(N, p_0)
+    agent_df.payoff = [t == A ? 1.0 + s : 1.0 for t in agent_df.trait]
+    return agent_df
 end
 
 # for model 4b
 function make_agent_df(N::Int64, p_0::Float64, q_0::Float64, L::Float64, s::Float64)::DataFrame
-    trait_payoff_df = make_trait_payoff_df(N, p_0, s)
-    trait_payoff_df.traits2 = [trait2trait(t, q_0, L) for t in trait_payoff_df.trait]
-    return trait_payoff_df
+    agent_df = make_agent_df(N, p_0, s)
+    agent_df.trait2 = [trait2trait(t, q_0, L) for t in agent_df.trait]
+    return agent_df
 end
 
 # for model 4b
@@ -55,7 +55,13 @@ function flip_ABC(t::Trait)::Trait
 end
 
 function trait_ratio(_agents_df::DataFrame, trait::Trait)::Float64
-    return nrow(_agents_df[_agents_df.trait.==trait, :]) / nrow(_agents_df)
+    trait_count = if trait == A
+        nrow(_agents_df[_agents_df.trait.==trait, :])
+    elseif trait == X
+        nrow(_agents_df[_agents_df.trait2.==trait, :])
+    end
+
+    return trait_count / nrow(_agents_df)
 end
 
 end  # module end
