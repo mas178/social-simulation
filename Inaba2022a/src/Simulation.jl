@@ -1,4 +1,3 @@
-# In this version, "hop" is model parameter.
 module Simulation
 
 using Dates: format, now
@@ -24,8 +23,8 @@ end
 
 mutable struct Model
     graph::SimpleGraph{Int64}
-    hop_game::Int  # game interaction globality / locality parameter
-    hop_learning::Int  # adaptation (learning) globality / locality parameter
+    h_G::Int  # game interaction globality / locality parameter
+    h_R::Int  # adaptation (learning) globality / locality parameter
     b::Float64  # benefit multiplying factor
     c::Float64  # game contribution
     μ::Float64  # mutation rate
@@ -39,8 +38,8 @@ end
 
 function Model(
     graph::SimpleGraph{Int64};
-    hop_game::Int,
-    hop_learning::Int,
+    h_G::Int,
+    h_R::Int,
     b::Float64,
     μ::Float64,
     δ::Float64,
@@ -48,9 +47,9 @@ function Model(
     update_rule::UpdateRule
 )::Model
     agents = [Agent(id) for id in vertices(graph)]
-    neighbours_game = [[agents[_id] for _id in neighborhood(graph, id, hop_game) if _id != id] for id in vertices(graph)]
-    neighbours_learning = [[agents[_id] for _id in neighborhood(graph, id, hop_learning) if _id != id] for id in vertices(graph)]
-    return Model(graph, hop_game, hop_learning, b, 1.0, μ, δ, interaction_rule, update_rule, agents, neighbours_game, neighbours_learning)
+    neighbours_game = [[agents[_id] for _id in neighborhood(graph, id, h_G) if _id != id] for id in vertices(graph)]
+    neighbours_learning = [[agents[_id] for _id in neighborhood(graph, id, h_R) if _id != id] for id in vertices(graph)]
+    return Model(graph, h_G, h_R, b, 1.0, μ, δ, interaction_rule, update_rule, agents, neighbours_game, neighbours_learning)
 end
 
 cooperator_rate(model::Model)::Float64 = mean([agent.strategy == C for agent in model.agents])
@@ -62,54 +61,8 @@ pairwise_fermi(πᵢ::Float64, πⱼ::Float64, κ::Float64 = 0.1)::Float64 = 1 /
 function calc_payoffs!(model::Model)
     if model.interaction_rule == PairWise
         for agent in model.agents
-            # for opponent in model.neighbours_game[agent.id]
-            #     # おかしなスパイクが生じる
-            #     # if (agent.strategy, opponent.strategy) == (C, C)
-            #     #     agent.payoff += 1
-            #     # elseif (agent.strategy, opponent.strategy) == (C, D)
-            #     #     agent.payoff -= 0.0001
-            #     # elseif (agent.strategy, opponent.strategy) == (D, C)
-            #     #     agent.payoff += 1 + (1 / model.b)
-            #     # elseif (agent.strategy, opponent.strategy) == (D, D)
-            #     #     agent.payoff += 0
-            #     # end
-            #     # ↓ 一切協力が進化しない
-            #     # if (agent.strategy, opponent.strategy) == (C, C)
-            #     #     agent.payoff += (model.b - model.c)
-            #     # elseif (agent.strategy, opponent.strategy) == (C, D)
-            #     #     agent.payoff -= model.c
-            #     # elseif (agent.strategy, opponent.strategy) == (D, C)
-            #     #     agent.payoff += model.b
-            #     # elseif (agent.strategy, opponent.strategy) == (D, D)
-            #     #     agent.payoff += 0
-            #     # end
-            #     # ロジックをPGGに揃えた利得表。但し、bの値は 1 < b < 2 にする必要がある。
-            #     if (agent.strategy, opponent.strategy) == (C, C)
-            #         agent.payoff += (model.b - model.c)
-            #     elseif (agent.strategy, opponent.strategy) == (C, D)
-            #         agent.payoff += (model.b / 2 - model.c)
-            #     elseif (agent.strategy, opponent.strategy) == (D, C)
-            #         agent.payoff += (model.b / 2)
-            #     elseif (agent.strategy, opponent.strategy) == (D, D)
-            #         agent.payoff += 0
-            #     end
-            # end
-            # ↓ 公共財ゲームに揃える
-            # opponent = rand(model.neighbours_game[agent.id])
-            # if (agent.strategy, opponent.strategy) == (C, C)
-            #     agent.payoff += (model.b - model.c)
-            # elseif (agent.strategy, opponent.strategy) == (C, D)
-            #     agent.payoff += (model.b / 2 - model.c)
-            # elseif (agent.strategy, opponent.strategy) == (D, C)
-            #     agent.payoff += (model.b / 2)
-            # elseif (agent.strategy, opponent.strategy) == (D, D)
-            #     agent.payoff += 0
-            # end
-            
             # Scale-Free Networks Provide a Unifying Framework for the Emergence of Cooperation (Santos & Pacheco, 2005)
-            # Prisoner's Dilemma: T > R > T > S
             for opponent in model.neighbours_game[agent.id]
-                # opponent = rand(model.neighbours_game[agent.id])
                 if (agent.strategy, opponent.strategy) == (C, C)
                     agent.payoff += 1.0  # R
                 elseif (agent.strategy, opponent.strategy) == (C, D)
@@ -226,19 +179,19 @@ end
 function run()
     println("running on Julia $VERSION ($(Threads.nthreads()) Threads)")
 
-    trial_count = 28
+    trial_count = 48
     agent_count = 10^3  # 10^4
     generations = 10^6  # 10^5
-    network_type_list = [:regular_4]  # [:scale_free_4, :regular_4, :random_4]
-    hop_game_list = [1]  # [1, 2, 3, 4, 5, 6]
-    hop_learning_list = [1, 2, 3, 4, 5, 6]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    b_list = [1.1]  # [4.0, 4.5, 5.0, 5.5, 6.0] [1.1, 1.2, 1.3, 1.4, 1.5]
-    μ_list = [0.0]  # [0.0, 0.01]
-    δ_list = [0.01]  # [0.01, 0.1, 0.5, 1.0]
+    network_type_list = [:regular_4, :random_4, :scale_free_4]  # :regular_4, :random_4, :scale_free_4
+    h_G_list = [2, 3, 4, 5, 6]  # 1, 2, 3, 4, 5, 6
+    h_R_list = [1, 2, 3, 4, 5, 6]  # 1, 2, 3, 4, 5, 6
+    b_list = [1.1, 1.2, 1.3, 1.4, 1.5]  # [4.0, 4.5, 5.0, 5.5, 6.0] [1.1, 1.2, 1.3, 1.4, 1.5]
+    μ_list = [0.0, 0.01]
+    δ_list = [0.01, 0.1, 0.5, 1.0]  # [0.0625, 0.25, 1.0] [0.01, 0.1, 0.5, 1.0]
     interaction_rule_list = [PairWise]  # [PairWise, Group]
-    update_rule_list = [DB]  # [BD, DB, IM]
+    update_rule_list = [BD, DB, IM]
 
-    simulation_pattern = vec(collect(Base.product(network_type_list, hop_game_list, hop_learning_list, b_list, μ_list, δ_list, interaction_rule_list, update_rule_list)))
+    simulation_pattern = vec(collect(Base.product(network_type_list, h_G_list, h_R_list, b_list, μ_list, δ_list, interaction_rule_list, update_rule_list)))
     println("simulation_pattern: $(length(simulation_pattern))")
 
     _now = format(now(), "yyyymmdd_HHMMSS")
@@ -250,20 +203,21 @@ function run()
         counter = 0
 
         open(file_name, "w") do io
-            @time for (network_type, hop_game, hop_learning, b, μ, δ, interaction_rule, update_rule) in simulation_pattern
+            @time for (network_type, h_G, h_R, b, μ, δ, interaction_rule, update_rule) in simulation_pattern
                 # Generate model
                 seed!(abs(rand(Int)))
                 graph = make_graph(network_type, agent_count)
-                model = Model(graph; hop_game=hop_game, hop_learning=hop_learning, b=b, μ=μ, δ=δ, interaction_rule=interaction_rule, update_rule=update_rule)
+                model = Model(graph; h_G=h_G, h_R=h_R, b=b, μ=μ, δ=δ, interaction_rule=interaction_rule, update_rule=update_rule)
 
                 # Output initial status of cooperator_rate
-                param_str = join([network_type, hop_game, hop_learning, b, μ, δ, interaction_rule, update_rule, trial], ",")
+                param_str = join([network_type, h_G, h_R, b, μ, δ, interaction_rule, update_rule, trial], ",")
                 # println(io, join([param_str, 0, cooperator_rate(model)], ","))
                 cooperator_rate_list = []
 
                 # Run simulation
                 for step in 1:generations
-                    if μ != 0.0 || 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
+                    # if μ != 0.0 || 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
+                    if 0 < cooperator_rate(model) < 1  # if all-C or all-D, skip all process.
                         calc_payoffs!(model)
                         update_fitness!(model)
                         update_strategies!(model)
@@ -299,7 +253,7 @@ function analyze_networks()
     open(file_name, "w") do io
         for (hop, network_type) in network_pattern
             graph = make_graph(network_type, N)
-            model = Model(graph; hop_game=hop, hop_learning=1, b=0.0, μ=0.0, δ=0.0, interaction_rule=PairWise, update_rule=BD)
+            model = Model(graph; h_G=hop, h_R=1, b=0.0, μ=0.0, δ=0.0, interaction_rule=PairWise, update_rule=BD)
             for _id in 1:N
                 for agent in model.neighbours_game[_id]
                     println(io, join([network_type, hop, _id, agent.id], ","))
@@ -311,13 +265,13 @@ end
 
 end  # module end
 
-# cd ~/Dropbox/workspace/social-simulation/Inaba2022a
+# cd ~/Dropbox/workspace/inaba2023a
 # julia --threads 8 src/Simulation.jl &
 # julia src/Simulation.jl &
 # nohup julia --threads 8 src/Simulation.jl > out.log &
 if abspath(PROGRAM_FILE) == @__FILE__
     using .Simulation
-    # Simulation.run()
+    Simulation.run()
 
-    Simulation.analyze_networks()
+    # Simulation.analyze_networks()
 end

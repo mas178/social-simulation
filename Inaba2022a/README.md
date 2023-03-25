@@ -1,11 +1,13 @@
-# Effect of expanding learning scope on the evolution of cooperation in scale-free networks
+# Evolution of cooperation in multiplex networks: Cases in which asymmetry between interaction and replacement promotes cooperation
 
-Authors: Masaaki Inaba, Eizo Akiyama
+- Status: Under review (March 25, 2023)
 
-Status: Under review
-
-Abstruct:
-
-We study how expanding the scope for selecting game and learning (adaptation) partners affects the evolution of cooperation in public goods games on scale-free networks. We show the following three results. (i) Expanding the scope for selecting game partners suppresses cooperation. (ii) Expanding the scope for selecting learning partners promotes cooperation when cooperation evolution is difficult. (iii) When cooperation is more likely to evolve, slightly expanding the scope for selecting learning partners causes a significant drop in the cooperation rate, but expanding the scope further causes the cooperation rate to recover. Although (i) is explained by the hub-centered mechanism, the well-known dynamic that promotes cooperation on scale-free networks, (ii) and (iii) are caused by a completely different mechanism that has heretofore been rarely mentioned.
-
-https://arxiv.org/abs/2202.07211
+## Abstract
+Cooperation is the foundation of society, but we still know little about the conditions under which cooperation spreads within a group.
+We analyze cooperation in multiplex networks, which have recently gained attention as a model that successfully captures certain aspects of human social connections.
+Previous studies have shown that symmetry between interactions and strategy replacements promotes cooperation across a wide range of network structures, including regular networks, scale-free networks, and weighted dynamic networks.
+Interactions refer to actions that cause increases or decreases in payoff, and strategy replacements refer to actions that cause changes in behavioral traits.
+When these two actions are performed with the same partner as much as possible, we call the situation symmetrical.
+In other words, prior research indicates that in a two-layer multiplex network, where the first layer constrains the choice of interaction partners and the second layer constrains the choice of replacement partners, the more similar the two layers are, the more likely cooperation is promoted.
+However, we focus on the difference in scope between the two actions and, contrary to previous studies, find cases in which asymmetry promotes cooperation.
+This indicates that there can be not only symmetric but also asymmetric approaches for promoting cooperation.
