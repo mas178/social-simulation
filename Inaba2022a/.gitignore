@@ -1,1 +1,8 @@
-out/*
+**/.DS_Store
+**/.ipynb_checkpoints
+**/.idea
+**/.vscode/
+**/*.iml
+**/*.log
+**/degrees.csv
+**/nohup.out
