@@ -183,7 +183,7 @@ function run()
     agent_count = 10^3  # 10^4
     generations = 10^6  # 10^5
     network_type_list = [:regular_4, :random_4, :scale_free_4]  # :regular_4, :random_4, :scale_free_4
-    h_G_list = [2, 3, 4, 5, 6]  # 1, 2, 3, 4, 5, 6
+    h_G_list = [1, 2, 3, 4, 5, 6]  # 1, 2, 3, 4, 5, 6
     h_R_list = [1, 2, 3, 4, 5, 6]  # 1, 2, 3, 4, 5, 6
     b_list = [1.1, 1.2, 1.3, 1.4, 1.5]  # [4.0, 4.5, 5.0, 5.5, 6.0] [1.1, 1.2, 1.3, 1.4, 1.5]
     μ_list = [0.0, 0.01]
