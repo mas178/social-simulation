@@ -31,6 +31,15 @@ function make_agent_df(N::Int64, p_0::Float64, q_0::Float64, L::Float64, s::Floa
     return agent_df
 end
 
+function make_agent_df_for_model07(N::Int, p_0::Float64, q_0::Float64)::DataFrame
+    traits1 = [rand() < p_0 ? A : B for _ in 1:N]
+    traits2 = [rand() < q_0 ? A : B for _ in 1:N]
+    traits = vcat(traits1, traits2)
+    groups = vcat(fill(1, N), fill(2, N))
+
+    return DataFrame(trait = traits, group = groups)
+end
+
 # for model 4b
 function trait2trait(trait::Trait, q_0::Float64, L::Float64)::Trait
     return if L > rand()
@@ -62,6 +71,13 @@ function trait_ratio(_agents_df::DataFrame, trait::Trait)::Float64
     end
 
     return trait_count / nrow(_agents_df)
+end
+
+function trait_ratio(agent_df::DataFrame, trait::Agent.Trait, group::Int)::Float64
+    _df = agent_df[agent_df.group.==group, :]
+    trait_count = nrow(_df[_df.trait.==trait, :])
+
+    return trait_count / nrow(_df)
 end
 
 end  # module end
