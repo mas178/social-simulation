@@ -15,6 +15,6 @@
 # My original papers
 
 |Title|Author|Year|Journal|
-|:--|:--|:-:|
-|[Evolution of cooperation in multiplex networks through asymmetry between interaction and replacement](https://github.com/mas178/inaba2023a)|Masaaki Inaba, Eizo Akiyama|2023|Scientific Reports|
-|[Effect of expanding learning scope on the evolution of cooperation in scale-free networks](https://github.com/mas178/social-simulation/tree/main/Inaba2022a)|Masaaki Inaba, Eizo Akiyama|2022|arXiv (Preprint)|
+|:--|:--|:-:|:-|
+|[Evolution of cooperation in multiplex networks through asymmetry between interaction and replacement](https://github.com/mas178/inaba2023a)|Masaaki Inaba, Eizo Akiyama|2023|[Scientific Reports](https://www.nature.com/articles/s41598-023-37074-4)|
+|[Effect of expanding learning scope on the evolution of cooperation in scale-free networks](https://github.com/mas178/social-simulation/tree/main/Inaba2022a)|Masaaki Inaba, Eizo Akiyama|2022|[arXiv (Preprint)](https://arxiv.org/abs/2202.07211)|
