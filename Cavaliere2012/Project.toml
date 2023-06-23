@@ -1,0 +1,10 @@
+name = "Cavaliere2012"
+uuid = "2e73fff8-fa8f-4640-a175-1e7e296cf8a6"
+authors = ["mas178"]
+version = "0.1.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+JupyterFormatter = "b8b539d8-55b4-4e60-a505-d7876c054e58"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
