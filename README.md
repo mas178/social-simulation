@@ -2,6 +2,7 @@
 
 |Title|Author|Year|
 |:--|:--|:-:|
+|[Price's equation](https://github.com/mas178/social-simulation/blob/main/Price197X/Price197X.ipynb)|Price, G. R.|1970|
 |[Evolutionary games and spatial chaos](https://github.com/mas178/social-simulation/blob/main/Nowak1992.ipynb)|Martin A. Nowak & Robert M. May|1992|
 |[The evolution of cooperation in an ecological context: An agent-based model](https://github.com/mas178/social-simulation/tree/main/Pepper2000)|John W. Pepper & Barbara B. Smuts|2000|
 |[Scale-Free Networks Provide a Unifying Framework for the Emergence of Cooperation](https://github.com/mas178/social-simulation/blob/main/Santos2005.ipynb)|F. C. Santos & J. M. Pacheco|2005|
