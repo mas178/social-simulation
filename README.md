@@ -3,6 +3,8 @@
 |Title & Code link|Author|Year|DOI|
 |:--|:--|:-:|:--|
 |[Price's equation](https://github.com/mas178/social-simulation/blob/main/Price197X/Price197X.ipynb)|Price, G. R.|1970|https://doi.org/10.1038/227520a0|
+|[The evolution of cooperation](https://github.com/mas178/social-simulation/blob/main/Axelrod1981/Axelrod1981.ipynb)|Axelrod, R., & Hamilton, W. D.|1981|https://doi.org/10.1126/science.7466396|
+|[Rover: a strategy for exploiting cooperators in a patchy environment](https://github.com/mas178/social-simulation/blob/main/Dugatkin1991/Dugatkin1991.ipynb)|Dugatkin, L. A., & Wilson, D. S.|1991|https://doi.org/10.1086/285243|
 |[Evolutionary games and spatial chaos](https://github.com/mas178/social-simulation/blob/main/Nowak1992.ipynb)|Martin A. Nowak & Robert M. May|1992|https://doi.org/10.1038/359826a0|
 |[The evolution of cooperation in an ecological context: An agent-based model](https://github.com/mas178/social-simulation/tree/main/Pepper2000)|John W. Pepper & Barbara B. Smuts|2000|https://doi.org/10.1093/oso/9780195131673.003.0008|
 |[Scale-Free Networks Provide a Unifying Framework for the Emergence of Cooperation](https://github.com/mas178/social-simulation/blob/main/Santos2005.ipynb)|F. C. Santos & J. M. Pacheco|2005|https://doi.org/10.1103/PhysRevLett.95.098104|
